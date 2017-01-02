@@ -158,11 +158,12 @@ class Menu():
                 self.startRandomB.set_alpha(150)
                 self.startRandom    = self.menuFont.render("START RANDOM", False, self.colorWhite)
 
-                self.startMissionsR = self.menuFont.render("MISSIONS", False, self.colorRed)
+                self.startMissionsR = self.menuFont.render("Missions", False, self.colorRed)
                 self.startMissionsR.set_alpha(150)
-                self.startMissionsB = self.menuFont.render("MISSIONS", False, self.colorBlue)
+                self.startMissionsB = self.menuFont.render("Missions", False, self.colorBlue)
                 self.startMissionsB.set_alpha(150)
-                self.startMissions  = self.menuFont.render("MISSIONS", False, self.colorWhite)
+                self.startMissions  = self.menuFont.render("Missions", False, self.colorWhite)
+                self.startMissions.set_alpha(100)
 
                 self.settingsR  = self.menuFont.render("SETTINGS", False, self.colorRed)
                 self.settingsR.set_alpha(150)
@@ -279,7 +280,10 @@ class Menu():
                             self.RandomyBox = 20
                             self.RandomlvlBlocks =3
                             self.pointLevel, self.starPoint, self.timeLevel = game1.main()
-                            self.screenLevel = 2
+                            if self.timeLevel == 0:
+                                self.screenLevel = 0
+                            else:
+                                self.screenLevel = 2
                         if self.menuLevelSet == 3:
                             self.screenLevel = 3
                         if self.menuLevelSet == 4:

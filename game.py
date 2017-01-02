@@ -100,7 +100,7 @@ class Game():
 
         self.camera = Camera(camera_configure, self.total_level_width, self.total_level_height)
 
-        self.hero = Player(64, 64, self.total_level_width, self.volumeEffects,
+        self.hero = Player(64, 64, self.total_level_width,  self.total_level_height, self.volumeEffects,
                            port=self.portShocker, shockerLvl=self.shockerLevel)  # создаем героя по (x,y) координатам
         self.left = self.right = False  # по умолчанию - стоим
         self.up = False
@@ -240,7 +240,7 @@ class Game():
                     if self.pauseMenuLevel == 0: #Return in game
                         self.pause = not self.pause
                     elif self.pauseMenuLevel == 1: #Replay game
-                        self.hero = Player(64, 64, self.total_level_width, self.volumeEffects,
+                        self.hero = Player(64, 64, self.total_level_width, self.total_level_height, self.volumeEffects,
                                            port=self.portShocker, shockerLvl=self.shockerLevel)
                         self.massBlock = self.massBlockTemp
                         self.pause = not self.pause
@@ -328,14 +328,14 @@ class Game():
                     raise SystemExit, "QUIT"
                 if e.type == KEYDOWN and (e.key == K_UP or e.key == K_w):
                     self.up = True
-                if e.type == KEYDOWN and e.key == K_g:
-                    self.heroGod = True
-                    print "God mode " + str(self.heroGod)
-                    self.hero.setGod(self.heroGod)
-                if e.type == KEYDOWN and e.key == K_n:
-                    self.heroGod = False
-                    self.hero.setGod(self.heroGod)
-                    print "God mode " + str(self.heroGod)
+                #if e.type == KEYDOWN and e.key == K_g:
+                #    self.heroGod = True
+                #    print "God mode " + str(self.heroGod)
+                #    self.hero.setGod(self.heroGod)
+                #if e.type == KEYDOWN and e.key == K_n:
+                #    self.heroGod = False
+                #    self.hero.setGod(self.heroGod)
+                #    print "God mode " + str(self.heroGod)
                 if e.type == KEYDOWN and (e.key == K_LEFT or e.key == K_a):
                     self.left = True
                 if e.type == KEYDOWN and (e.key == K_RIGHT or e.key == K_d):

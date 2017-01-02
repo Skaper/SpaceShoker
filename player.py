@@ -41,9 +41,10 @@ ANIMATION_STAY = [('%s/texture/cr0/stayr0.png' % ICON_DIR, 0.1)]
 
 
 class Player(sprite.Sprite):
-    def __init__(self, x, y, total_level_width, volumeEffects, port="", shockerLvl="low"):
+    def __init__(self, x, y, total_level_width, total_level_height,volumeEffects, port="", shockerLvl="low"):
         self.volumeEffects = volumeEffects
         self.levelWidth = total_level_width
+        self.levelHeight =  total_level_height
         self.godMode = False
         self.point = 0
         self.port = port
@@ -115,6 +116,10 @@ class Player(sprite.Sprite):
             self.rect.x = 0
         if self.rect.x>(self.levelWidth-51): #Не двиижимся за карту справа
             self.rect.x = self.levelWidth-51
+        if self.rect.y > self.levelHeight+100:
+            self.rect.x = self.startX
+            self.rect.y = self.startY
+            self.point = 0
         if self.freezing == False:
             if up:
                 if self.onGround:  # прыгаем, только когда можем оттолкнуться от земли
@@ -158,13 +163,6 @@ class Player(sprite.Sprite):
             self.collide(self.xvel, 0, platforms) #self.collide(self.xvel, 0, platforms, killers, movment)
 
 
-
-        #else:
-            #if time.get_ticks() - self.time_freezing > self.time_freezing_Wait:
-                #self.freezing = False
-            #else:
-            #    self.teleport.update()
-            #    print "teleport"
         if self.teleportGo:
             if self.rect.x < 1100:
                 self.rect.x = self.startX
@@ -172,25 +170,18 @@ class Player(sprite.Sprite):
                 self.freezing = False
                 self.teleportGo = False
             else:
-                if self.rect.x + 1000 > self.tempX:
+                if self.rect.x + 1100 > self.tempX:
                     self.rect.x -= 10
-                    #self.teleport.update()
+                    self.teleport.update()
                 else:
                     self.freezing = False
                     self.teleportGo = False
 
     def goStart(self):
-        #TODO замедлить телепорт
-        #self.freezing =True
         self.teleport = Teleport(self.rect.x+50, self.rect.y+50)
         self.tempX = self.rect.x
         self.tempY = self.rect.y
-        #if self.rect.x < 800:
-        #    self.rect.x = self.startX
-        #    self.rect.y = self.startY
-        #else:
-        #    self.rect.x -=800
-        #    self.rect.y = -100
+
 
 
     def setGod(self, mode):
