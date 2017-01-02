@@ -5,8 +5,12 @@ from pygame import *
 import pyganim
 import os
 font.init()
-
-
+try:
+    import serial
+except:
+    print "Serial Error"
+#port = serial.Serial('/dev/ttyACM0', baudrate=115200, dsrdtr=1, timeout=3.0)
+port = ""
 MOVE_SPEED = 10
 WIDTH = 35
 HEIGHT = 50
@@ -37,17 +41,22 @@ ANIMATION_STAY = [('%s/texture/cr0/stayr0.png' % ICON_DIR, 0.1)]
 
 
 class Player(sprite.Sprite):
-    def __init__(self, x, y, total_level_width, volumeEffects):
+    def __init__(self, x, y, total_level_width, volumeEffects, port="", shockerLvl="low"):
         self.volumeEffects = volumeEffects
         self.levelWidth = total_level_width
         self.godMode = False
         self.point = 0
+        self.port = port
+        self.shockerLevel = shockerLvl
         sprite.Sprite.__init__(self)
         self.xvel = 0  # скорость перемещения. 0 - стоять на месте
         self.startX = x  # Начальная позиция Х, пригодится когда будем переигрывать уровень
         self.startY = y
         self.yvel = 0  # скорость вертикального перемещения
         self.onGround = False  # На земле ли я?
+        self.teleportGo = False
+        self.tempX = x
+        self.tempY = y
         self.image = Surface((WIDTH, HEIGHT))
         self.image.fill(Color(COLOR))
         self.image2 = Surface((WIDTH, HEIGHT))
@@ -148,24 +157,40 @@ class Player(sprite.Sprite):
             self.rect.x += self.xvel  # переносим свои положение на xvel
             self.collide(self.xvel, 0, platforms) #self.collide(self.xvel, 0, platforms, killers, movment)
 
-        else:
-            if time.get_ticks() - self.time_freezing > self.time_freezing_Wait:
+
+
+        #else:
+            #if time.get_ticks() - self.time_freezing > self.time_freezing_Wait:
+                #self.freezing = False
+            #else:
+            #    self.teleport.update()
+            #    print "teleport"
+        if self.teleportGo:
+            if self.rect.x < 1100:
+                self.rect.x = self.startX
+                self.rect.y = self.startY
                 self.freezing = False
+                self.teleportGo = False
             else:
-                self.teleport.update()
-                print "teleport"
+                if self.rect.x + 1000 > self.tempX:
+                    self.rect.x -= 10
+                    #self.teleport.update()
+                else:
+                    self.freezing = False
+                    self.teleportGo = False
 
     def goStart(self):
         #TODO замедлить телепорт
         #self.freezing =True
         self.teleport = Teleport(self.rect.x+50, self.rect.y+50)
-
-        if self.rect.x < 800:
-            self.rect.x = self.startX
-            self.rect.y = self.startY
-        else:
-            self.rect.x -=800
-            self.rect.y = -100
+        self.tempX = self.rect.x
+        self.tempY = self.rect.y
+        #if self.rect.x < 800:
+        #    self.rect.x = self.startX
+        #    self.rect.y = self.startY
+        #else:
+        #    self.rect.x -=800
+        #    self.rect.y = -100
 
 
     def setGod(self, mode):
@@ -209,8 +234,13 @@ class Player(sprite.Sprite):
                     self.point+=5
                 p.update()
 
-            if typeIs == "kill_shock1":
+            if typeIs == "kill_shock1":  
                 self.shockSound0.play(0)
+                if self.port != "":
+                    if self.shockerLevel == 'low':
+                        self.port.write("T2>1\n")
+                    if self.shockerLevel == 'high':
+                        self.port.write("T1>1\n")
                 if xvel > 0:  # если движется вправо
                     # self.rect.x += 16
                     # self.freezing = True
@@ -218,13 +248,11 @@ class Player(sprite.Sprite):
                     # self.rect.x += 64
                     if time.get_ticks() - self.time_killer > self.time_killer_Wait:
                         self.shokPoint += 1
-                        print self.shokPoint
                         self.time_killer = time.get_ticks()
                     break
                 if xvel < 0:  # если движется влево
                     if time.get_ticks() - self.time_killer > self.time_killer_Wait:
                         self.shokPoint += 1
-                        print self.shokPoint
                         self.time_killer = time.get_ticks()
                     # self.rect.x -= 32
                     # self.freezing = True
@@ -233,7 +261,6 @@ class Player(sprite.Sprite):
                 if yvel > 0:  # если падает вниз
                     if time.get_ticks() - self.time_killer > self.time_killer_Wait:
                         self.shokPoint += 1
-                        print self.shokPoint
                         self.time_killer = time.get_ticks()
                     # self.freezing = True
                     # self.rect.x -= 32
@@ -241,15 +268,16 @@ class Player(sprite.Sprite):
                 if yvel < 0:  # если движется вверх
                     if time.get_ticks() - self.time_killer > self.time_killer_Wait:
                         self.shokPoint += 1
-                        print self.shokPoint
                         self.time_killer = time.get_ticks()
                     break
                     # self.freezing = True
                     # self.rect.x += 32
+
             elif typeIs == "kill_move1":
                 if not self.godMode:
                     self.freezing =True
                     self.goStart()
+                    self.teleportGo = True
             elif typeIs == "rocket":
                 p.setEndLevel()
 

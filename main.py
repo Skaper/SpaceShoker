@@ -2,8 +2,11 @@
 # -*- coding: utf-8 -*-
 
 # Импортируем библиотеку pygame
+import sys
+import glob
 import pygame
-from pygame import *
+
+#from pygame import *
 from game import Game
 from blocks import *
 ICON_DIR = os.path.dirname(__file__)  # Полный путь к каталогу с файлами
@@ -20,6 +23,33 @@ WIN_HEIGHT = 720#720  # Высота
 DISPLAY = (WIN_WIDTH, WIN_HEIGHT)  # Группируем ширину и высоту в одну переменную
 BACKGROUND_COLOR = "#000000"
 
+def serial_ports():
+    """ Lists serial port names
+
+        :raises EnvironmentError:
+            On unsupported or unknown platforms
+        :returns:
+            A list of the serial ports available on the system
+    """
+    if sys.platform.startswith('win'):
+        ports = ['COM%s' % (i + 1) for i in range(256)]
+    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        # this excludes your current terminal "/dev/tty"
+        ports = glob.glob('/dev/tty[A-Za-z]*')
+    elif sys.platform.startswith('darwin'):
+        ports = glob.glob('/dev/tty.*')
+    else:
+        raise EnvironmentError('Unsupported platform')
+
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(port)
+            s.close()
+            result.append(port)
+        except (OSError, serial.SerialException):
+            pass
+    return result
 
 class Menu():
         def __init__(self):
@@ -60,6 +90,11 @@ class Menu():
             self.effectsValume = 0.3
             self.resolution = 1280#1920
             self.graphics = "Higt"
+
+            #Shoker
+            self.portId = 0
+            self.shockLevel = 'low'
+            self.portName = ""
         def main(self):
             self.planetGif = Planet(WIN_WIDTH-500, 0)
             self.background = Surface((WIN_WIDTH, WIN_HEIGHT))
@@ -89,6 +124,10 @@ class Menu():
             self.negativeSound0 = pygame.mixer.Sound("%s/sound/negative0.wav" % ICON_DIR)
             self.negativeSound0.set_volume(self.effectsValume)
             self.screenLevel = 0
+            #self.USBports = serial_ports()
+            self.USBports = []
+            self.USBports.append("OFF")
+            #self.USBports.append("OFF")
             while 1:
                 self.loop()
 
@@ -225,6 +264,8 @@ class Menu():
 
                     if e.type == KEYDOWN and e.key == K_RETURN:
                         self.enterSound0.play(0)
+                        if self.menuLevelSet == 0:
+                            self.screenLevel = 4
                         if self.menuLevelSet == 1:
                             self.RandomxBox = random.randint(20, 61)
                             self.RandomyBox = random.randint(15, 45)
@@ -314,9 +355,13 @@ class Menu():
                             self.screenLevel = 0
                         elif self.menuLevelSetings == 5:
                             self.loadSound0.play(0)
-                            game1 = Game(self.RandomxBox, self.RandomyBox, self.RandomlvlBlocks, self.Randomcomplexity)
+                            game1 = Game(self.RandomxBox, self.RandomyBox, self.RandomlvlBlocks,
+                                         self.Randomcomplexity, portName=self.portName, shockLevel=self.shockLevel)
                             self.pointLevel, self.starPoint, self.timeLevel = game1.main()  # self.pointLevel, self.starPoint, self.timeLevel
-                            self.screenLevel = 2
+                            if self.timeLevel == 0: #Если игра прервана возвращаемся в главное меню
+                                self.screenLevel = 0
+                            else:
+                                self.screenLevel = 2
 
                 self.gameLogo1 = self.menuFont.render("Random Level", False, (255, 255, 255))
                 #self.gameLogo2 = self.menuFont2.render("SHOCK!", False, (255, 255, 255))
@@ -697,27 +742,218 @@ class Menu():
                 self.screen.blit(self.backButton, (backButtonX, backButtonY))
 
                 self.screen.blit(self.gameLogo1, (logoWidth1, 50))
+            #Настройка шокера
+            elif self.screenLevel == 4:  # Настройки шокера
+                self.screen.blit(self.background, (0, 0))
+                self.screen.blit(self.planetGif.image, self.planetGif.rect)
+                self.planetGif.update()
+
+                for e in pygame.event.get():  # Обрабатываем события
+                    if e.type == QUIT:
+                        raise SystemExit, "QUIT"
+                    if e.type == KEYDOWN and e.key == K_m:
+                        self.backSound.stop()
+                    if e.type == KEYDOWN and (e.key == K_DOWN or e.key == K_s):
+
+                        self.menuSound0.play(0)
+                        self.menuLevelSetings += 1
+                        if self.menuLevelSetings > 5:
+                            self.menuLevelSetings = 0
+                    if e.type == KEYDOWN and (e.key == K_UP or e.key == K_w):
+
+                        self.menuSound0.play(0)
+                        self.menuLevelSetings -= 1
+                        if self.menuLevelSetings < 0:
+                            self.menuLevelSetings = 5
+                    if e.type == KEYDOWN and (e.key == K_RIGHT or e.key == K_d):
+
+                        if self.menuLevelSetings == 0:
+                            self.USBports = []
+                            self.USBports.append("OFF")
+                            portsFound = serial_ports()
+                            #self.USBports[0] = "OFF"
+                            for port in portsFound:
+                                self.USBports.append(port)
+
+                            if self.portId < len(self.USBports)-1:
+                                    self.portId +=1
+                            else:
+                                self.negativeSound0.play(0)
+                            if self.USBports[self.portId] != "OFF":
+                                self.portTest = serial.Serial(self.USBports[self.portId], baudrate=115200, timeout=0.0)
+                        if self.menuLevelSetings == 1:
+                            self.shockLevel = 'high'
+                    if e.type == KEYDOWN and (e.key == K_LEFT or e.key == K_a):
+
+                        if self.menuLevelSetings == 0:
+                            self.USBports = []
+                            self.USBports.append("OFF")
+                            portsFound = serial_ports()
+                            # self.USBports[0] = "OFF"
+                            for port in portsFound:
+                                self.USBports.append(port)
+                            if self.portId > 0:
+                                    self.portId -=1
+                            else:
+                                self.negativeSound0.play(0)
+                            if self.USBports[self.portId] != "OFF":
+                                self.portTest = serial.Serial(self.USBports[self.portId], baudrate=115200, timeout=0.0)
+                        if self.menuLevelSetings == 1:
+                            self.shockLevel = 'low'
+
+                    if e.type == KEYDOWN and e.key == K_RETURN:
+                        if self.menuLevelSetings == 2:
+                            if self.USBports[self.portId] != "OFF":
+                                #port = serial.Serial(self.USBports[self.portId], baudrate=115200, timeout=0.0)
+                                try:
+                                    if self.shockLevel == 'high':
+                                        self.portTest.write("T1>1\n")
+                                    elif self.shockLevel == 'low':
+                                        self.portTest.write("T2>1\n")
+                                except:
+                                    pass
+                                #port.close()
+                        elif self.menuLevelSetings == 3:  # Retum to main menu
+                            self.enterSound0.play(0)
+                            self.screenLevel = 0
+                            self.portId = 0
+                            if self.USBports[self.portId] != "OFF":
+                                self.portTest.close()
+                            else:
+                                self.portName = ""
+
+                        elif self.menuLevelSetings == 4: #OK BUTTON
+                            self.loadSound0.play(0)
+                            self.screenLevel = 0
+                            if self.USBports[self.portId] != "OFF":
+                                self.portTest.close()
+                                self.portName = self.USBports[self.portId]
+                            else:
+                                self.portName = ""
+
+
+                self.gameLogo1 = self.menuFont.render("CONNECT SHOCKER", False, (255, 255, 255))
+                # self.gameLogo2 = self.menuFont2.render("SHOCK!", False, (255, 255, 255))
+                logoWidth1 = WIN_WIDTH / 2 - self.gameLogo1.get_width() / 2
+
+                # self.menuLevelSetings == 0
+
+
+                self.lenSetXR = self.menuFont.render("USB Port: " + self.USBports[self.portId], False, self.colorRed)
+                self.lenSetXR.set_alpha(150)
+                self.lenSetXB = self.menuFont.render("USB Port: " + self.USBports[self.portId], False, self.colorBlue)
+                self.lenSetXB.set_alpha(150)
+                self.lenSetXi = self.menuFont.render("USB Port: " + self.USBports[self.portId], False, self.colorWhite)
+
+                # self.menuLevelSetings == 1
+                self.lenSetYR = self.menuFont.render("Shock level: " + self.shockLevel, False, self.colorRed)
+                self.lenSetYR.set_alpha(150)
+                self.lenSetYB = self.menuFont.render("Shock level: " + self.shockLevel, False, self.colorBlue)
+                self.lenSetYB.set_alpha(150)
+                self.lenSetYi = self.menuFont.render("Shock level: " + self.shockLevel, False, self.colorWhite)
+
+                # self.menuLevelSetings == 2
+                self.lenSetBlockR = self.menuFont.render("Test shock!", False, self.colorWhite)
+                self.lenSetBlockR.set_alpha(150)
+                self.lenSetBlockB = self.menuFont.render("Test shock! ", False, self.colorBlue)
+                self.lenSetBlockB.set_alpha(150)
+                self.lenSetBlocki = self.menuFont.render("Test shock! ", False, self.colorRed)
+                # self.menuLevelSetings == 3:
+
+
+                # self.menuLevelSetings == 4
+                self.backButtonR = self.menuFont.render("< BACK", False, self.colorRed)
+                self.backButtonR.set_alpha(150)
+                self.backButtonB = self.menuFont.render("< BACK", False, self.colorBlue)
+                self.backButtonB.set_alpha(150)
+                self.backButton = self.menuFont.render("< BACK", False, self.colorWhite)
+                # self.menuLevelSetings == 5
+                self.okButtonR = self.menuFont.render("Connect! >", False, self.colorRed)
+                self.okButtonR.set_alpha(150)
+                self.okButtonB = self.menuFont.render("Connect! >", False, self.colorBlue)
+                self.okButtonB.set_alpha(150)
+                self.okButton = self.menuFont.render("Connect! >", False, self.colorWhite)
+
+                textHeigt = self.lenSetXi.get_height()
+                allTextH = textHeigt * 4
+                conShoX = WIN_WIDTH / 2 - self.lenSetXi.get_width() / 2
+                conShoY = WIN_HEIGHT / 2 - allTextH / 2 - textHeigt / 2
+
+                strRndX = WIN_WIDTH / 2 - self.lenSetYi.get_width() / 2
+                strRndY = conShoY + textHeigt
+                strMsnX = WIN_WIDTH / 2 - self.lenSetBlocki.get_width() / 2
+                strMsnY = strRndY + textHeigt
+
+
+                okButtonX = WIN_WIDTH - self.okButton.get_width() - 10
+                okButtonY = WIN_HEIGHT - textHeigt - 10
+
+                backButtonX = 10
+                backButtonY = WIN_HEIGHT - textHeigt - 10
+
+                # self.startMissions.get_height()  + self.startSettings.get_height()
+                self.screen.blit(self.background, (0, 0))
+                self.screen.blit(self.planetGif.image, self.planetGif.rect)
+                self.planetGif.update()
+
+                if self.menuLevelSetings == 0:
+                    self.menuGid.rect = (conShoX, conShoY, self.lenSetXi.get_width(), textHeigt)
+                    self.menuGid.update()
+                    self.screen.blit(self.menuGid.image, self.menuGid.rect)
+
+                elif self.menuLevelSetings == 1:
+                    self.menuGid.rect = (strRndX, strRndY, self.lenSetYi.get_width(), textHeigt)
+                    self.menuGid.update()
+                    self.screen.blit(self.menuGid.image, self.menuGid.rect)
+
+                elif self.menuLevelSetings == 2:
+                    self.menuGid.rect = (strMsnX, strMsnY, self.lenSetBlocki.get_width(), textHeigt)
+                    self.menuGid.update()
+                    self.screen.blit(self.menuGid.image, self.menuGid.rect)
+
+
+
+                elif self.menuLevelSetings == 3:
+                    self.menuGid.rect = (backButtonX, backButtonY, self.backButton.get_width(), textHeigt)
+                    self.menuGid.update()
+                    self.screen.blit(self.menuGid.image, self.menuGid.rect)
+
+                elif self.menuLevelSetings == 4:
+                    self.menuGid.rect = (okButtonX, okButtonY, self.okButton.get_width(), textHeigt)
+                    self.menuGid.update()
+                    self.screen.blit(self.menuGid.image, self.menuGid.rect)
+
+                txtPosX = random.randint(2, 6)
+                txtPosY = random.randint(2, 6)
+
+                self.screen.blit(self.lenSetXR, (conShoX - txtPosX, conShoY - txtPosY))
+                self.screen.blit(self.lenSetXB, (conShoX + txtPosX, conShoY + txtPosY))
+                self.screen.blit(self.lenSetXi, (conShoX, conShoY))
+
+                self.screen.blit(self.lenSetYR, (strRndX - txtPosX, strRndY - txtPosY))
+                self.screen.blit(self.lenSetYB, (strRndX + txtPosX, strRndY + txtPosY))
+                self.screen.blit(self.lenSetYi, (strRndX, strRndY))
+
+                self.screen.blit(self.lenSetBlockR, (strMsnX - txtPosX, strMsnY - txtPosY))
+                self.screen.blit(self.lenSetBlockB, (strMsnX + txtPosX, strMsnY + txtPosY))
+                self.screen.blit(self.lenSetBlocki, (strMsnX, strMsnY))
+
+
+
+                self.screen.blit(self.okButtonR, (okButtonX - txtPosX, okButtonY - txtPosY))
+                self.screen.blit(self.okButtonB, (okButtonX + txtPosX, okButtonY + txtPosY))
+                self.screen.blit(self.okButton, (okButtonX, okButtonY))
+
+                self.screen.blit(self.backButtonR, (backButtonX - txtPosX, backButtonY - txtPosY))
+                self.screen.blit(self.backButtonB, (backButtonX + txtPosX, backButtonY + txtPosY))
+                self.screen.blit(self.backButton, (backButtonX, backButtonY))
+
+                self.screen.blit(self.gameLogo1, (logoWidth1, 50))
 
             pygame.display.update()
 
 
-class MenuRECT(pygame.sprite.Sprite):
-    def __init__(self, rect):
-        x, y, w, h = rect
-        self.red = (250, 0,250)
-        sprite.Sprite.__init__(self)
-        self.image = Surface((w, h))
-        self.image.fill(self.red)
-        self.rect = Rect(x, y, 100, 10)
 
-    def getData(self):
-        return "menuRECT"
-
-    def update(self):
-        x, y, w, h = self.rect
-        self.image.fill(self.red)
-        self.image = Surface((w, h))
-        self.rect = Rect(x, y, 100, 10)
 
 
 menuGame = Menu()

@@ -281,3 +281,21 @@ class Planet(sprite.Sprite):
         #self.boltAnimLeft.stop()
     def getData(self):
         return "planet"
+
+class MenuRECT(sprite.Sprite):
+    def __init__(self, rect):
+        x, y, w, h = rect
+        self.red = (250, 0,250)
+        sprite.Sprite.__init__(self)
+        self.image = Surface((w, h))
+        self.image.fill(self.red)
+        self.rect = Rect(x, y, 100, 10)
+
+    def getData(self):
+        return "menuRECT"
+
+    def update(self):
+        x, y, w, h = self.rect
+        self.image.fill(self.red)
+        self.image = Surface((w, h))
+        self.rect = Rect(x, y, 100, 10)
