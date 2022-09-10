@@ -1,3 +1,5 @@
+Game project for fun. A platformer that gives you an electric shock if you make a wrong move. =)
+
 # SpaceShoker
 ## Required Python 2.7 library: 
 ### PyGame 1.9.1release + 
